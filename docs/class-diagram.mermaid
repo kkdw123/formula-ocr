@@ -1,0 +1,114 @@
+classDiagram
+    direction LR
+
+    class FormulaStore {
+        +string imageBase64
+        +string imageName
+        +string latex
+        +string latexSource
+        +boolean isRecognizing
+        +boolean isConverting
+        +string error
+        +FormatResults formatResults
+        +HistoryRecord[] history
+        +setImage(imageBase64: string, name: string) void
+        +setLatex(latex: string) void
+        +setRecognizing(val: boolean) void
+        +setError(error: string) void
+        +updateFormatResult(format: FormatType, result: string) void
+        +addHistory(record: HistoryRecord) void
+        +clearAll() void
+    }
+
+    class FormatResults {
+        +string omml
+        +string mathml
+        +string mathematica
+        +string matlab
+        +string asciimath
+    }
+
+    class HistoryRecord {
+        +string id
+        +string imageName
+        +string imageBase64
+        +string latex
+        +number timestamp
+    }
+
+    class ApiService {
+        +string baseUrl
+        +recognize(imageBase64: string, mimeType: string, apiKey: string) Promise~RecognizeResponse~
+        +convertOmml(latex: string) Promise~OmmlResponse~
+    }
+
+    class RecognizeResponse {
+        +boolean success
+        +string latex
+        +string error
+    }
+
+    class OmmlResponse {
+        +boolean success
+        +string omml
+        +string error
+    }
+
+    class GeminiService {
+        +string apiKey
+        +recognizeFormula(imageBase64: string, mimeType: string) Promise~string~
+        -buildPrompt() string
+        -callGeminiApi(imageBase64: string, mimeType: string) Promise~any~
+    }
+
+    class OmmlService {
+        +convertToOmml(latex: string, displayMode: boolean) Promise~string~
+    }
+
+    class BaseConverter {
+        <<abstract>>
+        +convert(latex: string) string
+        #parseLatex(latex: string) LatexNode
+        #mapCommand(command: string, args: string[]) string
+    }
+
+    class MathMLConverter {
+        +convert(latex: string) string
+    }
+
+    class MathematicaConverter {
+        +convert(latex: string) string
+        -commandMap: Record~string, string~
+        #mapCommand(command: string, args: string[]) string
+    }
+
+    class MatlabConverter {
+        +convert(latex: string) string
+        -commandMap: Record~string, string~
+        #mapCommand(command: string, args: string[]) string
+    }
+
+    class AsciimathConverter {
+        +convert(latex: string) string
+        -commandMap: Record~string, string~
+        #mapCommand(command: string, args: string[]) string
+    }
+
+    class ConverterRegistry {
+        -Map~FormatType, BaseConverter~ converters
+        +register(format: FormatType, converter: BaseConverter) void
+        +convert(latex: string, format: FormatType) string
+        +convertAll(latex: string) FormatResults
+    }
+
+    FormulaStore *-- FormatResults
+    FormulaStore *-- HistoryRecord
+    ApiService ..> RecognizeResponse
+    ApiService ..> OmmlResponse
+    GeminiService ..> RecognizeResponse
+    OmmlService ..> OmmlResponse
+    BaseConverter <|-- MathMLConverter
+    BaseConverter <|-- MathematicaConverter
+    BaseConverter <|-- MatlabConverter
+    BaseConverter <|-- AsciimathConverter
+    ConverterRegistry o-- BaseConverter

@@ -1,0 +1,15 @@
+node_modules/
+client/node_modules/
+server/node_modules/
+client/src/
+client/public/
+client/index.html
+client/tsconfig.json
+client/tsconfig.node.json
+client/vite.config.ts
+client/tailwind.config.ts
+client/postcss.config.js
+client/package.json
+client/package-lock.json
+docs/
+.git/

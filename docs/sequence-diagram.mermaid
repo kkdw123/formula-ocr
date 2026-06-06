@@ -1,0 +1,47 @@
+sequenceDiagram
+    actor User
+    participant Dropzone as ImageDropzone
+    participant Store as FormulaStore
+    participant API as ApiService
+    participant Server as Express Server
+    participant Gemini as GeminiService
+    participant GeminiAPI as Gemini Flash API
+
+    User->>Dropzone: 上传/拖拽/粘贴图片
+    Dropzone->>Dropzone: 校验文件类型(PNG/JPG/SVG/WebP)
+    Dropzone->>Dropzone: 读取为 Base64
+    Dropzone->>Store: setImage(base64, name)
+    User->>Dropzone: 点击「开始识别」
+    Dropzone->>Store: setRecognizing(true)
+    Store->>API: recognize(base64, mimeType, apiKey)
+    API->>Server: POST /api/recognize
+    Server->>Server: rateLimit 中间件检查
+    Server->>Gemini: recognizeFormula(base64, mimeType)
+    Gemini->>Gemini: buildPrompt() 构建识别提示词
+    Gemini->>GeminiAPI: generateContent(image + prompt)
+    GeminiAPI-->>Gemini: 返回 LaTeX 文本
+    Gemini->>Gemini: 提取并清理 LaTeX（去除 ```latex 标记等）
+    Gemini-->>Server: 返回 LaTeX 字符串
+    Server-->>API: { success: true, latex }
+    API-->>Store: RecognizeResponse
+    Store->>Store: setLatex(latex)
+    Store->>Store: setRecognizing(false)
+    Store->>Store: addHistory(record)
+    Store->>Store: 触发格式转换
+
+    par 前端转换（并行）
+        Store->>Store: MathMLConverter.convert(latex)
+        Store->>Store: MathematicaConverter.convert(latex)
+        Store->>Store: MatlabConverter.convert(latex)
+        Store->>Store: AsciimathConverter.convert(latex)
+    and 后端转换
+        Store->>API: convertOmml(latex)
+        API->>Server: POST /api/convert/omml
+        Server->>Server: OmmlService.convertToOmml(latex)
+        Server-->>API: { success: true, omml }
+        API-->>Store: updateFormatResult('omml', result)
+    end
+
+    Store->>Store: setConverting(false)
+    User->>Store: 点击复制按钮
+    Store->>User: 结果复制到剪贴板
