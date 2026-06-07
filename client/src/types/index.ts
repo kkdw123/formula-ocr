@@ -1,3 +1,6 @@
+/** 识别引擎类型 */
+export type Provider = 'gemini' | 'moonshot' | 'simpletex';
+
 /** 支持的格式类型 */
 export type FormatType = 'omml' | 'mathml' | 'mathematica' | 'matlab' | 'asciimath';
 
@@ -38,6 +41,7 @@ export interface RecognizeRequest {
   imageBase64: string;
   mimeType: string;
   apiKey?: string;
+  provider?: Provider;
 }
 
 /** OMML 转换接口请求 */

@@ -15,6 +15,7 @@ import FormulaPreview from './components/FormulaPreview';
 import FormatConverter from './components/FormatConverter';
 import ApiKeyDialog from './components/ApiKeyDialog';
 import HistoryPanel from './components/HistoryPanel';
+import { useFormulaStore } from './store/useFormulaStore';
 
 // 注册前端格式转换器
 import { converterRegistry } from './converters';
@@ -32,6 +33,7 @@ converterRegistry.register('asciimath', new AsciiMathConverter());
 function App() {
   const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const provider = useFormulaStore((s) => s.provider);
 
   return (
     <Box
@@ -88,7 +90,7 @@ function App() {
         }}
       >
         <Typography variant="caption" color="text.secondary">
-          Powered by Gemini Flash · 开源项目
+          Powered by {provider === 'simpletex' ? 'SimpleTex' : provider === 'moonshot' ? '月之暗面 (Kimi)' : 'Gemini Flash'} · 开源项目
         </Typography>
       </Box>
 

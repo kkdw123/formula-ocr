@@ -1,9 +1,19 @@
 import { create } from 'zustand';
-import type { FormatResults, HistoryRecord } from '../types';
+import type { FormatResults, HistoryRecord, Provider } from '../types';
 import { recognizeApi, convertOmmlApi } from '../services/api';
 import { converterRegistry } from '../converters';
-import { loadHistory, saveHistory } from '../utils/storage';
-import { loadApiKey, saveApiKey } from '../utils/storage';
+import {
+  loadHistory,
+  saveHistory,
+  loadGeminiKey,
+  saveGeminiKey,
+  loadMoonshotKey,
+  saveMoonshotKey,
+  loadSimpleTexKey,
+  saveSimpleTexKey,
+  loadProvider,
+  saveProvider,
+} from '../utils/storage';
 
 interface FormulaState {
   /** 当前图片 Base64 */
@@ -22,8 +32,14 @@ interface FormulaState {
   formatResults: FormatResults;
   /** 识别历史 */
   history: HistoryRecord[];
-  /** 当前 API Key */
-  apiKey: string;
+  /** 当前识别引擎 */
+  provider: Provider;
+  /** Gemini API Key */
+  geminiApiKey: string;
+  /** Moonshot API Key */
+  moonshotApiKey: string;
+  /** SimpleTex API Key */
+  simpletexApiKey: string;
 
   /** 设置图片 */
   setImage: (base64: string, name: string) => void;
@@ -37,8 +53,14 @@ interface FormulaState {
   updateFormatResult: (format: keyof FormatResults, result: string) => void;
   /** 添加历史记录 */
   addHistory: (record: HistoryRecord) => void;
-  /** 设置 API Key */
-  setApiKey: (key: string) => void;
+  /** 设置识别引擎 */
+  setProvider: (provider: Provider) => void;
+  /** 设置 Gemini API Key */
+  setGeminiApiKey: (key: string) => void;
+  /** 设置 Moonshot API Key */
+  setMoonshotApiKey: (key: string) => void;
+  /** 设置 SimpleTex API Key */
+  setSimpleTexApiKey: (key: string) => void;
   /** 清空所有状态 */
   clearAll: () => void;
   /** 恢复历史记录到编辑区 */
@@ -68,7 +90,10 @@ export const useFormulaStore = create<FormulaState>((set, get) => ({
     asciimath: '',
   },
   history: loadHistory(),
-  apiKey: loadApiKey(),
+  provider: loadProvider(),
+  geminiApiKey: loadGeminiKey(),
+  moonshotApiKey: loadMoonshotKey(),
+  simpletexApiKey: loadSimpleTexKey(),
 
   setImage: (base64: string, name: string) => {
     set({ imageBase64: base64, imageName: name, error: '' });
@@ -86,11 +111,16 @@ export const useFormulaStore = create<FormulaState>((set, get) => ({
   },
 
   recognize: async () => {
-    const { imageBase64, imageName, apiKey } = get();
+    const { imageBase64, imageName, provider, geminiApiKey, moonshotApiKey, simpletexApiKey } = get();
     if (!imageBase64) {
       set({ error: '请先上传图片' });
       return;
     }
+
+    let apiKey: string | undefined;
+    if (provider === 'moonshot') apiKey = moonshotApiKey;
+    else if (provider === 'simpletex') apiKey = simpletexApiKey;
+    else apiKey = geminiApiKey;
 
     set({ isRecognizing: true, error: '' });
 
@@ -109,6 +139,7 @@ export const useFormulaStore = create<FormulaState>((set, get) => ({
         imageBase64,
         mimeType,
         apiKey: apiKey || undefined,
+        provider,
       });
 
       if (result.success && result.latex) {
@@ -197,9 +228,24 @@ export const useFormulaStore = create<FormulaState>((set, get) => ({
     });
   },
 
-  setApiKey: (key: string) => {
-    set({ apiKey: key });
-    saveApiKey(key);
+  setProvider: (provider: Provider) => {
+    set({ provider });
+    saveProvider(provider);
+  },
+
+  setGeminiApiKey: (key: string) => {
+    set({ geminiApiKey: key });
+    saveGeminiKey(key);
+  },
+
+  setMoonshotApiKey: (key: string) => {
+    set({ moonshotApiKey: key });
+    saveMoonshotKey(key);
+  },
+
+  setSimpleTexApiKey: (key: string) => {
+    set({ simpletexApiKey: key });
+    saveSimpleTexKey(key);
   },
 
   clearAll: () => {
